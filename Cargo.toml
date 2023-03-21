@@ -1,6 +1,11 @@
 [package]
 name = "baskelian_toolbox"
-version = "0.1.0"
+version = "0.2.1"
+authors = ["Suprnova <nova@suprnova.dev>"]
+description = "A collection of tools to assist in working with DAT files from Baskelian."
+readme = "README.md"
+repository = "https://github.com/suprnova/baskelian_toolbox"
+license = "WTFPL"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

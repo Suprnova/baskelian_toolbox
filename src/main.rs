@@ -22,6 +22,18 @@ fn main() {
                 extension = String::from(".dff");
             } else if file[0] == 0x1B {
                 extension = String::from(".anm");
+            } else {
+                let mut current_index: usize = 0;
+                let mut space_count: u8 = 0;
+                while space_count <= 20 && current_index < 150 && current_index < file.len() && file[current_index] != 0x0A {
+                    if file[current_index] == 0x20 {
+                        space_count += 1;
+                    }
+                    current_index += 1;
+                }
+                if space_count == 20 {
+                    extension = String::from(".stats");
+                }
             }
             let file_path = Path::new(&input_trimmed).parent().unwrap().join(format!("{i}-{j}{extension}"));
             std::fs::write(file_path, file).unwrap();

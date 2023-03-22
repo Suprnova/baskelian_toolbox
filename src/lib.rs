@@ -28,12 +28,13 @@ pub mod dat_file {
             file.read_exact(&mut count_buffer)?;
             dat_struct.entry_count = u32::from_le_bytes(count_buffer);
             let mut buffer: [u8; 12] = [255; 12];
-            // could simply use entry_count instead of waiting for an empty buffer
-            while buffer != [0; 12] {
+            let mut i = 0;
+            while i < dat_struct.entry_count {
                 // this throws an error if even one table is messed up, we could be more lenient with something like that
                 file.read_exact(&mut buffer)?;
                 let entry = TableEntry::from_entry(buffer);
                 dat_struct.table_entries.push(entry);
+                i = i + 1;
             }
             for entry in dat_struct.table_entries.iter() {
                 dat_struct.inner_dats.push(dat_struct.read_entry(&entry).unwrap());

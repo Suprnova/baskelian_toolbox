@@ -10,13 +10,22 @@ fn main() {
     let dat = DAT::from_file(file).unwrap();
     for (i, inner_dat) in dat.inner_dats.as_slice().iter().enumerate() {
         for (j, entry) in inner_dat.file_table_entries.as_slice().iter().enumerate() {
+            let mut extension = String::new();
             let file = dat.read_file(inner_dat, entry).unwrap();
             if file.len() == 0 {
                 continue;
             }
-            let file_path = Path::new(&input_trimmed).parent().unwrap().join(format!("{}/{}", i, j));
+            // This will be adapted into a set of enums and detector functions in the main library, this is a temporary POC
+            if file[0] == 0x16 {
+                extension = String::from(".txd");
+            } else if file[0] == 0x10 {
+                extension = String::from(".dff");
+            } else if file[0] == 0x1B {
+                extension = String::from(".anm");
+            }
+            let file_path = Path::new(&input_trimmed).parent().unwrap().join(format!("{i}-{j}{extension}"));
             std::fs::write(file_path, file).unwrap();
-            println!("Finished file {i}-{j}");
+            println!("Finished file {i}-{j}{extension}");
         }
     }
 }

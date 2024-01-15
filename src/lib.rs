@@ -130,8 +130,12 @@ pub mod dat {
     pub enum FileType {
         /// RenderWare Anim Animation File (0x1B)
         ANM,
+        /// RenderWare Delta Morph Animation File (0x1E)
+        DMA,
         /// RenderWare Model File (Clump) (0x10)
         DFF,
+        /// Baskelian Map Info File
+        MAPINFO,
         /// Baskelian Stats File 
         STATS, // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
         /// RenderWare Texture Dictionary (0x16)
@@ -148,10 +152,11 @@ pub mod dat {
                     0x10 => Self::DFF,
                     0x16 => Self::TXD,
                     0x1B => Self::ANM,
+                    0x1E => Self::DMA,
                     _ => {
                         let mut current_index: usize = 0;
                         let mut space_count: u8 = 0;
-                        while space_count <= 20 && current_index < 150 && current_index < data.len() && data[current_index] != 0x0A {
+                        while current_index < 150 && current_index < data.len() && data[current_index] != 0x0A {
                             if data[current_index] == 0x20 {
                                 space_count += 1;
                             }
@@ -160,7 +165,17 @@ pub mod dat {
                         if space_count == 20 {
                             Self::STATS
                         } else {
-                            Self::UNKNOWN
+                            let mut current_index: usize = 12;
+                            let mut buffer_count: u8 = 0;
+                            while current_index < 32 && current_index < data.len() && data[current_index] == 0xFF {
+                                buffer_count += 1;
+                                current_index += 1;
+                            }
+                            if buffer_count == 12 && data.len() > 29 && data[8] == data[28] { // data [8] and data[28] are expected to be the Map ID value of the map that the MAPINFO file is referencing
+                                Self::MAPINFO
+                            } else {
+                                Self::UNKNOWN
+                            }
                         }
                     }
 
@@ -173,7 +188,9 @@ pub mod dat {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
                 Self::ANM => write!(f, ".anm"),
+                Self::DMA => write!(f, ".dma"),
                 Self::DFF => write!(f, ".dff"),
+                Self::MAPINFO => write!(f, ".mapinfo"),
                 Self::STATS => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
                 Self::UNKNOWN => write!(f, "")

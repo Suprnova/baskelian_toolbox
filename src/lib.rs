@@ -85,7 +85,7 @@ pub mod dat {
         /// The number of entries in the file
         pub entry_count: u32
     }
-
+z
     impl TableEntry {
         fn from_entry(entry: [u8; 12]) -> Self {
             Self {
@@ -137,7 +137,7 @@ pub mod dat {
         /// Baskelian Map Info File
         MAPINFO,
         /// Baskelian Stats File 
-        STATS, // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
+        STATS(Stats), // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
         /// RenderWare Texture Dictionary (0x16)
         TXD,
         UNKNOWN
@@ -163,7 +163,7 @@ pub mod dat {
                             current_index += 1;
                         }
                         if space_count == 20 {
-                            Self::STATS
+                            Self::STATS(Stats::from_data(data))
                         } else {
                             let mut current_index: usize = 12;
                             let mut buffer_count: u8 = 0;
@@ -197,4 +197,36 @@ pub mod dat {
             }
         }
     }
+
+    pub struct Stats {
+        pub entries: Vec<StatsEntry>
+    }
+      
+    impl Stats {
+        fn from_file(file: File) -> Self {
+            let mut current_index: usize = 0;
+            let mut entry: Vec<u8> = Vec::new();
+            while current_index < data.len() {
+                if data[current_index] != 0x0A {
+                    entry.push_back(data[current_index]);
+                }
+                else {
+                    let entry: StatsEntry::from_data(data);
+                    entries.push_back(entry); 
+                    entry.clear();
+                }
+            curent_index += 1;
+        }
+      }
+      
+    pub struct StatsEntry {
+        /* whatever fields there are */
+      }
+      
+    impl StatsEntry {
+        fn from_data (data: Vec<u8>) -> Self {
+          // determining if entries should be interpretted as a string even if nova doesn't like that
+        }
+      }
+
 }

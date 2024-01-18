@@ -2,7 +2,8 @@ pub mod dat {
     use core::fmt;
     use std::{
         fs::File as ioFile,
-        io::{Read, Seek, Error},
+        io::{Error, Read, Seek},
+        string,
     };
 
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
@@ -38,7 +39,9 @@ pub mod dat {
                 i += 1;
             }
             for entry in dat_struct.table_entries.iter() {
-                dat_struct.inner_dats.push(dat_struct.read_entry(&entry).unwrap());
+                dat_struct
+                    .inner_dats
+                    .push(dat_struct.read_entry(&entry).unwrap());
             }
             Ok(dat_struct)
         }
@@ -55,15 +58,23 @@ pub mod dat {
             let mut i = 0;
             while i < inner_struct.entry_count {
                 file.read_exact(&mut buffer)?;
-                inner_struct.file_table_entries.push(FileTableEntry::from_file_entry(buffer));
+                inner_struct
+                    .file_table_entries
+                    .push(FileTableEntry::from_file_entry(buffer));
                 i += 1;
             }
             Ok(inner_struct)
         }
 
-        pub fn read_file(&self, inner_dat: &InnerDAT, entry: &FileTableEntry) -> Result<File, Error> {
+        pub fn read_file(
+            &self,
+            inner_dat: &InnerDAT,
+            entry: &FileTableEntry,
+        ) -> Result<File, Error> {
             let mut file = self.file.as_ref().unwrap();
-            file.seek(std::io::SeekFrom::Start((inner_dat.offset + entry.address).into()))?;
+            file.seek(std::io::SeekFrom::Start(
+                (inner_dat.offset + entry.address).into(),
+            ))?;
             let mut buffer: Vec<u8> = vec![0; entry.size.try_into().unwrap()];
             file.read_exact(&mut buffer)?;
             Ok(File::new(buffer))
@@ -83,15 +94,19 @@ pub mod dat {
         /// The size of the file
         pub size: u32,
         /// The number of entries in the file
-        pub entry_count: u32
+        pub entry_count: u32,
     }
-z
+
     impl TableEntry {
         fn from_entry(entry: [u8; 12]) -> Self {
             Self {
-                address: u32::from_le_bytes(entry[0..4].try_into().expect("invalid table entry address")),
+                address: u32::from_le_bytes(
+                    entry[0..4].try_into().expect("invalid table entry address"),
+                ),
                 size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")),
-                entry_count: u32::from_le_bytes(entry[8..12].try_into().expect("invalid table entry count")),
+                entry_count: u32::from_le_bytes(
+                    entry[8..12].try_into().expect("invalid table entry count"),
+                ),
             }
         }
     }
@@ -100,13 +115,15 @@ z
         /// The memory address within the parent DAT in which the file appears
         pub address: u32,
         /// The size of the file
-        pub size: u32
+        pub size: u32,
     }
 
     impl FileTableEntry {
         fn from_file_entry(entry: [u8; 8]) -> Self {
             Self {
-                address: u32::from_le_bytes(entry[0..4].try_into().expect("invalid table entry address")),
+                address: u32::from_le_bytes(
+                    entry[0..4].try_into().expect("invalid table entry address"),
+                ),
                 size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")),
             }
         }
@@ -115,14 +132,14 @@ z
     // Todo: move all of this into a file mod, containing the structs for necessary file types (i.e. Stats) and associated functions
     pub struct File {
         pub data: Vec<u8>,
-        pub file_type: FileType
+        pub file_type: FileType,
     }
 
     impl File {
         fn new(data: Vec<u8>) -> Self {
             Self {
                 file_type: FileType::from_data(&data),
-                data
+                data,
             }
         }
     }
@@ -136,11 +153,11 @@ z
         DFF,
         /// Baskelian Map Info File
         MAPINFO,
-        /// Baskelian Stats File 
+        /// Baskelian Stats File
         STATS(Stats), // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
         /// RenderWare Texture Dictionary (0x16)
         TXD,
-        UNKNOWN
+        UNKNOWN,
     }
 
     impl FileType {
@@ -156,7 +173,10 @@ z
                     _ => {
                         let mut current_index: usize = 0;
                         let mut space_count: u8 = 0;
-                        while current_index < 150 && current_index < data.len() && data[current_index] != 0x0A {
+                        while current_index < 150
+                            && current_index < data.len()
+                            && data[current_index] != 0x0A
+                        {
                             if data[current_index] == 0x20 {
                                 space_count += 1;
                             }
@@ -167,18 +187,21 @@ z
                         } else {
                             let mut current_index: usize = 12;
                             let mut buffer_count: u8 = 0;
-                            while current_index < 32 && current_index < data.len() && data[current_index] == 0xFF {
+                            while current_index < 32
+                                && current_index < data.len()
+                                && data[current_index] == 0xFF
+                            {
                                 buffer_count += 1;
                                 current_index += 1;
                             }
-                            if buffer_count == 12 && data.len() > 29 && data[8] == data[28] { // data [8] and data[28] are expected to be the Map ID value of the map that the MAPINFO file is referencing
+                            if buffer_count == 12 && data.len() > 29 && data[8] == data[28] {
+                                // data [8] and data[28] are expected to be the Map ID value of the map that the MAPINFO file is referencing
                                 Self::MAPINFO
                             } else {
                                 Self::UNKNOWN
                             }
                         }
                     }
-
                 }
             }
         }
@@ -193,15 +216,16 @@ z
                 Self::MAPINFO => write!(f, ".mapinfo"),
                 Self::STATS => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
-                Self::UNKNOWN => write!(f, "")
+                Self::UNKNOWN => write!(f, ""),
             }
         }
     }
 
+    #[derive(Debug)]
     pub struct Stats {
-        pub entries: Vec<StatsEntry>
+        pub entries: Vec<StatsEntry>,
     }
-      
+
     impl Stats {
         fn from_file(file: File) -> Self {
             let mut current_index: usize = 0;
@@ -209,24 +233,119 @@ z
             while current_index < data.len() {
                 if data[current_index] != 0x0A {
                     entry.push_back(data[current_index]);
-                }
-                else {
+                } else {
                     let entry: StatsEntry::from_data(data);
-                    entries.push_back(entry); 
+                    entries.push_back(entry);
                     entry.clear();
                 }
-            curent_index += 1;
+                current_index += 1;
+            }
         }
-      }
-      
-    pub struct StatsEntry {
-        /* whatever fields there are */
-      }
-      
-    impl StatsEntry {
-        fn from_data (data: Vec<u8>) -> Self {
-          // determining if entries should be interpretted as a string even if nova doesn't like that
-        }
-      }
+    }
 
+    #[derive(Debug)]
+    pub struct StatsEntry {
+        pub name: str,
+        pub team: u8,
+        pub point_guard: u8,
+        pub shooting_guard: u8,
+        pub small_forward: u8,
+        pub power_forward: u8,
+        pub center: u8,
+        pub height: u8,
+        pub weight: u8,
+        pub shoot_max: u8,
+        pub shoot_min: u8,
+        pub pass_max: u8,
+        pub pass_min: u8,
+        pub dribble_max: u8,
+        pub dribble_min: u8,
+        pub power_max: u8,
+        pub power_min: u8,
+        pub speed_max: u8,
+        pub speed_min: u8,
+        pub quickness_max: u8,
+        pub quickness_min: u8,
+        pub jump_max: u8,
+        pub jump_min: u8,
+        pub stamina_max: u8,
+        pub stamina_min: u8,
+        pub unknown_1: u8,
+        pub unknown_2: u8,
+        pub price: u16,
+        pub unknown_3: u8,
+        pub unknown_4: u8,
+        pub unknown_5: u8,
+        pub unknown_6: Vec<u8>, // this part is composed of numbers separated by commas; number of numbers is inconsistent and their purpose is unknown
+        pub unknown_7: u8,
+    }
+
+    impl StatsEntry {
+        fn from_data(data: Vec<u8>) -> Self {
+            let mut current_index: usize = 0;
+            let mut stats_string: str;
+            let mut stats_vec: Vec<str> = Vec::new();
+            let mut unknown_6_string: str;
+            let mut unknown_6_vec: Vec<u8> = Vec::new();
+            let mut unknown_6_index: usize = 0;
+
+            while current_index < data.len() {
+                if data[current_index] != 0x20 && data[current_index] != 0x2D {
+                    stats_string.push_str(data[current_index].decode("utf-8"));
+                } else if data[current_index] != 0x0A {
+                    stats_vec.push_back(stats_string);
+                    stats_string.clear();
+                } else {
+                    stats_string = stats_vec[31];
+                    unknown_6_index = 0;
+                    while unknown_6_index < stats_string.len() {
+                        if stats_string[unknown_6_index] != 0x2C {
+                            unknown_6_string.push_str(stats_string[unknown_6_index]);
+                        } else {
+                            unknown_6_vec.push_back(unknown_6_string.parse().unwrap());
+                            unknown_6_string.clear();
+                        }
+                        unknown_6_index += 1;
+                    }
+                    Self {
+                        name: stats_vec[0],
+                        team: stats_vec[1].parse().unwrap(),
+                        point_guard: stats_vec[2].parse().unwrap(),
+                        shooting_guard: stats_vec[3].parse().unwrap(),
+                        small_forward: stats_vec[4].parse().unwrap(),
+                        power_forward: stats_vec[5].parse().unwrap(),
+                        center: stats_vec[6].parse().unwrap(),
+                        height: stats_vec[7].parse().unwrap(),
+                        weight: stats_vec[8].parse().unwrap(),
+                        shoot_max: stats_vec[9].parse().unwrap(),
+                        shoot_min: stats_vec[10].parse().unwrap(),
+                        pass_max: stats_vec[11].parse().unwrap(),
+                        pass_min: stats_vec[12].parse().unwrap(),
+                        dribble_max: stats_vec[13].parse().unwrap(),
+                        dribble_min: stats_vec[14].parse().unwrap(),
+                        power_max: stats_vec[15].parse().unwrap(),
+                        power_min: stats_vec[16].parse().unwrap(),
+                        speed_max: stats_vec[17].parse().unwrap(),
+                        speed_min: stats_vec[18].parse().unwrap(),
+                        quickness_max: stats_vec[19].parse().unwrap(),
+                        quickness_min: stats_vec[20].parse().unwrap(),
+                        jump_max: stats_vec[21].parse().unwrap(),
+                        jump_min: stats_vec[22].parse().unwrap(),
+                        stamina_max: stats_vec[23].parse().unwrap(),
+                        stamina_min: stats_vec[24].parse().unwrap(),
+                        unknown_1: stats_vec[25].parse().unwrap(),
+                        unknown_2: stats_vec[26].parse().unwrap(),
+                        price: stats_vec[27].parse().unwrap(),
+                        unknown_3: stats_vec[28].parse().unwrap(),
+                        unknown_4: stats_vec[29].parse().unwrap(),
+                        unknown_5: stats_vec[30].parse().unwrap(),
+                        unknown_6: unknown_6_vec,
+                        unknown_7: stats_vec[32].parse().unwrap(),
+                    };
+                    stats_vec.clear();
+                }
+                current_index += 1;
+            }
+        }
+    }
 }

@@ -301,10 +301,12 @@ pub mod dat {
                 } 
                 current_index += 1;
             }
-            if stats_vec.len() < 31 { // some entries have no max/min, resulting in errors with the current StatsEntry implementation. these are being defaulted to blank entries for the time being
-                return Default::default()
-            }
-            stats_string = stats_vec[31].clone();
+            stats_vec.push(stats_string.clone());
+            //if stats_vec.len() < 31 { // some entries have no max/min, resulting in errors with the current StatsEntry implementation. these are being defaulted to blank entries for the time being
+            //    return Default::default()
+            //}
+            let unknown_6_location: usize = stats_vec.len() - 2;
+            stats_string = stats_vec[unknown_6_location].clone();
             unknown_6_index = 0;
             while unknown_6_index < stats_string.len() {
                 if stats_string.as_bytes()[unknown_6_index] != 0x2C {
@@ -315,40 +317,84 @@ pub mod dat {
                 }
                 unknown_6_index += 1;
             }
-            Self {
-                name: stats_vec[0].clone(),
-                team: stats_vec[1].parse().unwrap(),
-                point_guard: stats_vec[2].parse().unwrap(),
-                shooting_guard: stats_vec[3].parse().unwrap(),
-                small_forward: stats_vec[4].parse().unwrap(),
-                power_forward: stats_vec[5].parse().unwrap(),
-                center: stats_vec[6].parse().unwrap(),
-                height: stats_vec[7].parse().unwrap(),
-                weight: stats_vec[8].parse().unwrap(),
-                shoot_max: stats_vec[9].parse().unwrap(),
-                shoot_min: stats_vec[10].parse().unwrap(),
-                pass_max: stats_vec[11].parse().unwrap(),
-                pass_min: stats_vec[12].parse().unwrap(),
-                dribble_max: stats_vec[13].parse().unwrap(),
-                dribble_min: stats_vec[14].parse().unwrap(),
-                power_max: stats_vec[15].parse().unwrap(),
-                power_min: stats_vec[16].parse().unwrap(),
-                speed_max: stats_vec[17].parse().unwrap(),
-                speed_min: stats_vec[18].parse().unwrap(),
-                quickness_max: stats_vec[19].parse().unwrap(),
-                quickness_min: stats_vec[20].parse().unwrap(),
-                jump_max: stats_vec[21].parse().unwrap(),
-                jump_min: stats_vec[22].parse().unwrap(),
-                stamina_max: stats_vec[23].parse().unwrap(),
-                stamina_min: stats_vec[24].parse().unwrap(),
-                unknown_1: stats_vec[25].parse().unwrap(),
-                unknown_2: stats_vec[26].parse().unwrap(),
-                price: stats_vec[27].parse().unwrap(),
-                unknown_3: stats_vec[28].parse().unwrap(),
-                unknown_4: stats_vec[29].parse().unwrap(),
-                unknown_5: stats_vec[30].parse().unwrap(),
-                unknown_6: unknown_6_vec.clone(),
-                unknown_7: 0 //stats_vec[32].parse().unwrap() // stats parser bugged; currently not reading final entry
+            match stats_vec.len() {
+                33 => {
+                    Self {
+                        name: stats_vec[0].clone(),
+                        team: stats_vec[1].parse().unwrap(),
+                        point_guard: stats_vec[2].parse().unwrap(),
+                        shooting_guard: stats_vec[3].parse().unwrap(),
+                        small_forward: stats_vec[4].parse().unwrap(),
+                        power_forward: stats_vec[5].parse().unwrap(),
+                        center: stats_vec[6].parse().unwrap(),
+                        height: stats_vec[7].parse().unwrap(),
+                        weight: stats_vec[8].parse().unwrap(),
+                        shoot_max: stats_vec[9].parse().unwrap(),
+                        shoot_min: stats_vec[10].parse().unwrap(),
+                        pass_max: stats_vec[11].parse().unwrap(),
+                        pass_min: stats_vec[12].parse().unwrap(),
+                        dribble_max: stats_vec[13].parse().unwrap(),
+                        dribble_min: stats_vec[14].parse().unwrap(),
+                        power_max: stats_vec[15].parse().unwrap(),
+                        power_min: stats_vec[16].parse().unwrap(),
+                        speed_max: stats_vec[17].parse().unwrap(),
+                        speed_min: stats_vec[18].parse().unwrap(),
+                        quickness_max: stats_vec[19].parse().unwrap(),
+                        quickness_min: stats_vec[20].parse().unwrap(),
+                        jump_max: stats_vec[21].parse().unwrap(),
+                        jump_min: stats_vec[22].parse().unwrap(),
+                        stamina_max: stats_vec[23].parse().unwrap(),
+                        stamina_min: stats_vec[24].parse().unwrap(),
+                        unknown_1: stats_vec[25].parse().unwrap(),
+                        unknown_2: stats_vec[26].parse().unwrap(),
+                        price: stats_vec[27].parse().unwrap(),
+                        unknown_3: stats_vec[28].parse().unwrap(),
+                        unknown_4: stats_vec[29].parse().unwrap(),
+                        unknown_5: stats_vec[30].parse().unwrap(),
+                        unknown_6: unknown_6_vec.clone(),
+                        unknown_7: stats_vec[32].parse().unwrap()
+                    }
+                }
+                25 => {
+                    Self {
+                        name: stats_vec[0].clone(),
+                        team: stats_vec[1].parse().unwrap(),
+                        point_guard: stats_vec[2].parse().unwrap(),
+                        shooting_guard: stats_vec[3].parse().unwrap(),
+                        small_forward: stats_vec[4].parse().unwrap(),
+                        power_forward: stats_vec[5].parse().unwrap(),
+                        center: stats_vec[6].parse().unwrap(),
+                        height: stats_vec[7].parse().unwrap(),
+                        weight: stats_vec[8].parse().unwrap(),
+                        shoot_max: stats_vec[9].parse().unwrap(),
+                        shoot_min: stats_vec[9].parse().unwrap(),
+                        pass_max: stats_vec[10].parse().unwrap(),
+                        pass_min: stats_vec[10].parse().unwrap(),
+                        dribble_max: stats_vec[11].parse().unwrap(),
+                        dribble_min: stats_vec[11].parse().unwrap(),
+                        power_max: stats_vec[12].parse().unwrap(),
+                        power_min: stats_vec[12].parse().unwrap(),
+                        speed_max: stats_vec[13].parse().unwrap(),
+                        speed_min: stats_vec[13].parse().unwrap(),
+                        quickness_max: stats_vec[14].parse().unwrap(),
+                        quickness_min: stats_vec[14].parse().unwrap(),
+                        jump_max: stats_vec[15].parse().unwrap(),
+                        jump_min: stats_vec[15].parse().unwrap(),
+                        stamina_max: stats_vec[16].parse().unwrap(),
+                        stamina_min: stats_vec[16].parse().unwrap(),
+                        unknown_1: stats_vec[17].parse().unwrap(),
+                        unknown_2: stats_vec[18].parse().unwrap(),
+                        price: stats_vec[19].parse().unwrap(),
+                        unknown_3: stats_vec[20].parse().unwrap(),
+                        unknown_4: stats_vec[21].parse().unwrap(),
+                        unknown_5: stats_vec[22].parse().unwrap(),
+                        unknown_6: unknown_6_vec.clone(),
+                        unknown_7: stats_vec[24].parse().unwrap()
+                    }
+                }
+                _ => {
+                    Default::default()
+                }
             }
         }
     }

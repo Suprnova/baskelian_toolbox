@@ -214,38 +214,42 @@ pub mod dat {
                 Self::DMA => write!(f, ".dma"),
                 Self::DFF => write!(f, ".dff"),
                 Self::MAPINFO => write!(f, ".mapinfo"),
-                Self::STATS => write!(f, ".stats"),
+                Self::STATS(Stats) => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
                 Self::UNKNOWN => write!(f, ""),
             }
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct Stats {
         pub entries: Vec<StatsEntry>,
     }
 
     impl Stats {
-        fn from_file(file: File) -> Self {
+        fn from_data(data: &Vec<u8>) -> Self {
             let mut current_index: usize = 0;
-            let mut entry: Vec<u8> = Vec::new();
+            let mut line: Vec<u8> = Vec::new();
+            let mut entries: Vec<StatsEntry> = Vec::new();
             while current_index < data.len() {
-                if data[current_index] != 0x0A {
-                    entry.push_back(data[current_index]);
+                if data[current_index] != 0x0A { // all stats entries, including the final entry, end in a new line char (0x0A)
+                    line.push(data[current_index]);
                 } else {
-                    let entry: StatsEntry::from_data(data);
-                    entries.push_back(entry);
-                    entry.clear();
+                    let entry = StatsEntry::from_data(&line);
+                    entries.push(entry);
+                    line.clear();
                 }
                 current_index += 1;
+            }
+            Self {
+                entries
             }
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct StatsEntry {
-        pub name: str,
+        pub name: String,
         pub team: u8,
         pub point_guard: u8,
         pub shooting_guard: u8,
@@ -281,34 +285,34 @@ pub mod dat {
     }
 
     impl StatsEntry {
-        fn from_data(data: Vec<u8>) -> Self {
+        fn from_data(data: &Vec<u8>) -> Self {
             let mut current_index: usize = 0;
-            let mut stats_string: str;
-            let mut stats_vec: Vec<str> = Vec::new();
-            let mut unknown_6_string: str;
+            let mut stats_string: String = String::new();
+            let mut stats_vec: Vec<String> = Vec::new();
+            let mut unknown_6_string: String = String::new();
             let mut unknown_6_vec: Vec<u8> = Vec::new();
             let mut unknown_6_index: usize = 0;
-
             while current_index < data.len() {
-                if data[current_index] != 0x20 && data[current_index] != 0x2D {
-                    stats_string.push_str(data[current_index].decode("utf-8"));
+                if data[current_index] != 0x20 && data[current_index] != 0x2D && data[current_index] != 0x0A {
+                    let test: char = data[current_index] as char;
+                    stats_string.push(test);
                 } else if data[current_index] != 0x0A {
-                    stats_vec.push_back(stats_string);
+                    stats_vec.push(stats_string.clone());
                     stats_string.clear();
                 } else {
-                    stats_string = stats_vec[31];
+                    stats_string = stats_vec[30].clone();
                     unknown_6_index = 0;
                     while unknown_6_index < stats_string.len() {
-                        if stats_string[unknown_6_index] != 0x2C {
-                            unknown_6_string.push_str(stats_string[unknown_6_index]);
+                        if stats_string.as_bytes()[unknown_6_index] != 0x2C {
+                            unknown_6_string.push(stats_string.as_bytes()[unknown_6_index] as char);
                         } else {
-                            unknown_6_vec.push_back(unknown_6_string.parse().unwrap());
+                            unknown_6_vec.push(unknown_6_string.parse().unwrap());
                             unknown_6_string.clear();
                         }
                         unknown_6_index += 1;
                     }
                     Self {
-                        name: stats_vec[0],
+                        name: stats_vec[0].clone(),
                         team: stats_vec[1].parse().unwrap(),
                         point_guard: stats_vec[2].parse().unwrap(),
                         shooting_guard: stats_vec[3].parse().unwrap(),
@@ -339,13 +343,14 @@ pub mod dat {
                         unknown_3: stats_vec[28].parse().unwrap(),
                         unknown_4: stats_vec[29].parse().unwrap(),
                         unknown_5: stats_vec[30].parse().unwrap(),
-                        unknown_6: unknown_6_vec,
-                        unknown_7: stats_vec[32].parse().unwrap(),
+                        unknown_6: unknown_6_vec.clone(),
+                        unknown_7: stats_vec[32].parse().unwrap()
                     };
                     stats_vec.clear();
                 }
                 current_index += 1;
             }
+            Default::default()
         }
     }
 }

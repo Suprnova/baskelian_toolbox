@@ -294,8 +294,8 @@ pub mod dat {
             let mut unknown_6_index: usize = 0;
             while current_index < data.len() {
                 if data[current_index] != 0x20 && data[current_index] != 0x2D && data[current_index] != 0x0A {
-                    let test: char = data[current_index] as char;
-                    stats_string.push(test);
+                    let stats_char: char = data[current_index] as char;
+                    stats_string.push(stats_char);
                 } else if data[current_index] != 0x0A {
                     stats_vec.push(stats_string.clone());
                     stats_string.clear();

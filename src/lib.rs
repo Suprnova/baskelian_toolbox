@@ -3,7 +3,6 @@ pub mod dat {
     use std::{
         fs::File as ioFile,
         io::{Error, Read, Seek},
-        string,
     };
 
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
@@ -214,7 +213,7 @@ pub mod dat {
                 Self::DMA => write!(f, ".dma"),
                 Self::DFF => write!(f, ".dff"),
                 Self::MAPINFO => write!(f, ".mapinfo"),
-                Self::STATS(Stats) => write!(f, ".stats"),
+                Self::STATS(_) => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
                 Self::UNKNOWN => write!(f, ""),
             }
@@ -256,8 +255,8 @@ pub mod dat {
         pub small_forward: u8,
         pub power_forward: u8,
         pub center: u8,
-        pub height: u8,
-        pub weight: u8,
+        pub height: u16,
+        pub weight: u16,
         pub shoot_max: u8,
         pub shoot_min: u8,
         pub pass_max: u8,
@@ -276,7 +275,7 @@ pub mod dat {
         pub stamina_min: u8,
         pub unknown_1: u8,
         pub unknown_2: u8,
-        pub price: u16,
+        pub price: u32,
         pub unknown_3: u8,
         pub unknown_4: u8,
         pub unknown_5: u8,
@@ -291,66 +290,66 @@ pub mod dat {
             let mut stats_vec: Vec<String> = Vec::new();
             let mut unknown_6_string: String = String::new();
             let mut unknown_6_vec: Vec<u8> = Vec::new();
-            let mut unknown_6_index: usize = 0;
+            let mut unknown_6_index: usize;
             while current_index < data.len() {
-                if data[current_index] != 0x20 && data[current_index] != 0x2D && data[current_index] != 0x0A {
+                if data[current_index] != 0x20 && (data[current_index] != 0x2D || stats_vec.len() == 0) {
                     let stats_char: char = data[current_index] as char;
                     stats_string.push(stats_char);
-                } else if data[current_index] != 0x0A {
+                } else {
                     stats_vec.push(stats_string.clone());
                     stats_string.clear();
-                } else {
-                    stats_string = stats_vec[30].clone();
-                    unknown_6_index = 0;
-                    while unknown_6_index < stats_string.len() {
-                        if stats_string.as_bytes()[unknown_6_index] != 0x2C {
-                            unknown_6_string.push(stats_string.as_bytes()[unknown_6_index] as char);
-                        } else {
-                            unknown_6_vec.push(unknown_6_string.parse().unwrap());
-                            unknown_6_string.clear();
-                        }
-                        unknown_6_index += 1;
-                    }
-                    Self {
-                        name: stats_vec[0].clone(),
-                        team: stats_vec[1].parse().unwrap(),
-                        point_guard: stats_vec[2].parse().unwrap(),
-                        shooting_guard: stats_vec[3].parse().unwrap(),
-                        small_forward: stats_vec[4].parse().unwrap(),
-                        power_forward: stats_vec[5].parse().unwrap(),
-                        center: stats_vec[6].parse().unwrap(),
-                        height: stats_vec[7].parse().unwrap(),
-                        weight: stats_vec[8].parse().unwrap(),
-                        shoot_max: stats_vec[9].parse().unwrap(),
-                        shoot_min: stats_vec[10].parse().unwrap(),
-                        pass_max: stats_vec[11].parse().unwrap(),
-                        pass_min: stats_vec[12].parse().unwrap(),
-                        dribble_max: stats_vec[13].parse().unwrap(),
-                        dribble_min: stats_vec[14].parse().unwrap(),
-                        power_max: stats_vec[15].parse().unwrap(),
-                        power_min: stats_vec[16].parse().unwrap(),
-                        speed_max: stats_vec[17].parse().unwrap(),
-                        speed_min: stats_vec[18].parse().unwrap(),
-                        quickness_max: stats_vec[19].parse().unwrap(),
-                        quickness_min: stats_vec[20].parse().unwrap(),
-                        jump_max: stats_vec[21].parse().unwrap(),
-                        jump_min: stats_vec[22].parse().unwrap(),
-                        stamina_max: stats_vec[23].parse().unwrap(),
-                        stamina_min: stats_vec[24].parse().unwrap(),
-                        unknown_1: stats_vec[25].parse().unwrap(),
-                        unknown_2: stats_vec[26].parse().unwrap(),
-                        price: stats_vec[27].parse().unwrap(),
-                        unknown_3: stats_vec[28].parse().unwrap(),
-                        unknown_4: stats_vec[29].parse().unwrap(),
-                        unknown_5: stats_vec[30].parse().unwrap(),
-                        unknown_6: unknown_6_vec.clone(),
-                        unknown_7: stats_vec[32].parse().unwrap()
-                    };
-                    stats_vec.clear();
-                }
+                } 
                 current_index += 1;
             }
-            Default::default()
+            if stats_vec.len() < 31 { // some entries have no max/min, resulting in errors with the current StatsEntry implementation. these are being defaulted to blank entries for the time being
+                return Default::default()
+            }
+            stats_string = stats_vec[31].clone();
+            unknown_6_index = 0;
+            while unknown_6_index < stats_string.len() {
+                if stats_string.as_bytes()[unknown_6_index] != 0x2C {
+                    unknown_6_string.push(stats_string.as_bytes()[unknown_6_index] as char);
+                } else {
+                    unknown_6_vec.push(unknown_6_string.parse().unwrap());
+                    unknown_6_string.clear();
+                }
+                unknown_6_index += 1;
+            }
+            Self {
+                name: stats_vec[0].clone(),
+                team: stats_vec[1].parse().unwrap(),
+                point_guard: stats_vec[2].parse().unwrap(),
+                shooting_guard: stats_vec[3].parse().unwrap(),
+                small_forward: stats_vec[4].parse().unwrap(),
+                power_forward: stats_vec[5].parse().unwrap(),
+                center: stats_vec[6].parse().unwrap(),
+                height: stats_vec[7].parse().unwrap(),
+                weight: stats_vec[8].parse().unwrap(),
+                shoot_max: stats_vec[9].parse().unwrap(),
+                shoot_min: stats_vec[10].parse().unwrap(),
+                pass_max: stats_vec[11].parse().unwrap(),
+                pass_min: stats_vec[12].parse().unwrap(),
+                dribble_max: stats_vec[13].parse().unwrap(),
+                dribble_min: stats_vec[14].parse().unwrap(),
+                power_max: stats_vec[15].parse().unwrap(),
+                power_min: stats_vec[16].parse().unwrap(),
+                speed_max: stats_vec[17].parse().unwrap(),
+                speed_min: stats_vec[18].parse().unwrap(),
+                quickness_max: stats_vec[19].parse().unwrap(),
+                quickness_min: stats_vec[20].parse().unwrap(),
+                jump_max: stats_vec[21].parse().unwrap(),
+                jump_min: stats_vec[22].parse().unwrap(),
+                stamina_max: stats_vec[23].parse().unwrap(),
+                stamina_min: stats_vec[24].parse().unwrap(),
+                unknown_1: stats_vec[25].parse().unwrap(),
+                unknown_2: stats_vec[26].parse().unwrap(),
+                price: stats_vec[27].parse().unwrap(),
+                unknown_3: stats_vec[28].parse().unwrap(),
+                unknown_4: stats_vec[29].parse().unwrap(),
+                unknown_5: stats_vec[30].parse().unwrap(),
+                unknown_6: unknown_6_vec.clone(),
+                unknown_7: 0 //stats_vec[32].parse().unwrap() // stats parser bugged; currently not reading final entry
+            }
         }
     }
 }

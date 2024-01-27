@@ -13,9 +13,9 @@ fn main() {
             let file = dat.read_file(inner_dat, entry).unwrap();
             let file_path = Path::new(&input_trimmed).parent().unwrap().join(format!("{i}-{j}{}", file.file_type));
             std::fs::write(file_path, file.data).unwrap();
-            //if let FileType::STATS(stats_file) = file.file_type {
-            //    dbg!(stats_file);
-            //}
+            // if let FileType::STATS(stats_file) = file.file_type { // used to debug Stats and StatsEntry
+            //     dbg!(stats_file);
+            // }
             println!("Finished file {i}-{j}{}", file.file_type);
         }
     }

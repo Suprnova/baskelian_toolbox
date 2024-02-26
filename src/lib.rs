@@ -3,6 +3,8 @@ pub mod dat {
     use std::{
         fs::File as ioFile,
         io::{Error, Read, Seek},
+        str::FromStr,
+        string::ParseError,
     };
 
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
@@ -153,7 +155,7 @@ pub mod dat {
         /// Baskelian Map Info File
         MAPINFO,
         /// Baskelian Stats File
-        STATS(Stats), // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
+        STATS{stats_file: Stats}, // Todo: create a Stats struct that contains the info for a Stats file, and store it in the enum as a value
         /// RenderWare Texture Dictionary (0x16)
         TXD,
         UNKNOWN,
@@ -182,7 +184,7 @@ pub mod dat {
                             current_index += 1;
                         }
                         if space_count == 20 {
-                            Self::STATS(Stats::from_data(data))
+                            Self::STATS{ stats_file: Stats::from_data(data)}
                         } else {
                             let mut current_index: usize = 12;
                             let mut buffer_count: u8 = 0;
@@ -213,7 +215,7 @@ pub mod dat {
                 Self::DMA => write!(f, ".dma"),
                 Self::DFF => write!(f, ".dff"),
                 Self::MAPINFO => write!(f, ".mapinfo"),
-                Self::STATS(_) => write!(f, ".stats"),
+                Self::STATS{..} => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
                 Self::UNKNOWN => write!(f, ""),
             }
@@ -250,29 +252,17 @@ pub mod dat {
     pub struct StatsEntry {
         pub name: String,
         pub team: u8,
-        pub point_guard: u8,
-        pub shooting_guard: u8,
-        pub small_forward: u8,
-        pub power_forward: u8,
-        pub center: u8,
+        pub grades: PositionGrades,
         pub height: u16,
         pub weight: u16,
-        pub shoot_max: u8,
-        pub shoot_min: u8,
-        pub pass_max: u8,
-        pub pass_min: u8,
-        pub dribble_max: u8,
-        pub dribble_min: u8,
-        pub power_max: u8,
-        pub power_min: u8,
-        pub speed_max: u8,
-        pub speed_min: u8,
-        pub quickness_max: u8,
-        pub quickness_min: u8,
-        pub jump_max: u8,
-        pub jump_min: u8,
-        pub stamina_max: u8,
-        pub stamina_min: u8,
+        pub shoot: SkillRange,
+        pub pass: SkillRange,
+        pub dribble: SkillRange,
+        pub power: SkillRange,
+        pub speed: SkillRange,
+        pub quickness: SkillRange,
+        pub jump: SkillRange,
+        pub stamina: SkillRange,
         pub unknown_1: u8,
         pub unknown_2: u8,
         pub price: u32,
@@ -280,7 +270,7 @@ pub mod dat {
         pub unknown_4: u8,
         pub unknown_5: u8,
         pub unknown_6: Vec<u8>, // this part is composed of numbers separated by commas; number of numbers is inconsistent and their purpose is unknown
-        pub unknown_7: u8,
+        pub unknown_6_len: u8,
     }
 
     impl StatsEntry {
@@ -292,7 +282,8 @@ pub mod dat {
             let mut unknown_6_vec: Vec<u8> = Vec::new();
             let mut unknown_6_index: usize;
             while current_index < data.len() {
-                if data[current_index] != 0x20 && (data[current_index] != 0x2D || stats_vec.len() == 0) {
+                // TODO: this can be implemented as a split now
+                if data[current_index] != 0x20 {
                     let stats_char: char = data[current_index] as char;
                     stats_string.push(stats_char);
                 } else {
@@ -317,85 +308,81 @@ pub mod dat {
                 }
                 unknown_6_index += 1;
             }
-            match stats_vec.len() {
-                33 => {
-                    Self {
-                        name: stats_vec[0].clone(),
-                        team: stats_vec[1].parse().unwrap(),
-                        point_guard: stats_vec[2].parse().unwrap(),
-                        shooting_guard: stats_vec[3].parse().unwrap(),
-                        small_forward: stats_vec[4].parse().unwrap(),
-                        power_forward: stats_vec[5].parse().unwrap(),
-                        center: stats_vec[6].parse().unwrap(),
-                        height: stats_vec[7].parse().unwrap(),
-                        weight: stats_vec[8].parse().unwrap(),
-                        shoot_max: stats_vec[9].parse().unwrap(),
-                        shoot_min: stats_vec[10].parse().unwrap(),
-                        pass_max: stats_vec[11].parse().unwrap(),
-                        pass_min: stats_vec[12].parse().unwrap(),
-                        dribble_max: stats_vec[13].parse().unwrap(),
-                        dribble_min: stats_vec[14].parse().unwrap(),
-                        power_max: stats_vec[15].parse().unwrap(),
-                        power_min: stats_vec[16].parse().unwrap(),
-                        speed_max: stats_vec[17].parse().unwrap(),
-                        speed_min: stats_vec[18].parse().unwrap(),
-                        quickness_max: stats_vec[19].parse().unwrap(),
-                        quickness_min: stats_vec[20].parse().unwrap(),
-                        jump_max: stats_vec[21].parse().unwrap(),
-                        jump_min: stats_vec[22].parse().unwrap(),
-                        stamina_max: stats_vec[23].parse().unwrap(),
-                        stamina_min: stats_vec[24].parse().unwrap(),
-                        unknown_1: stats_vec[25].parse().unwrap(),
-                        unknown_2: stats_vec[26].parse().unwrap(),
-                        price: stats_vec[27].parse().unwrap(),
-                        unknown_3: stats_vec[28].parse().unwrap(),
-                        unknown_4: stats_vec[29].parse().unwrap(),
-                        unknown_5: stats_vec[30].parse().unwrap(),
-                        unknown_6: unknown_6_vec.clone(),
-                        unknown_7: stats_vec[32].parse().unwrap()
-                    }
-                }
-                25 => {
-                    Self {
-                        name: stats_vec[0].clone(),
-                        team: stats_vec[1].parse().unwrap(),
-                        point_guard: stats_vec[2].parse().unwrap(),
-                        shooting_guard: stats_vec[3].parse().unwrap(),
-                        small_forward: stats_vec[4].parse().unwrap(),
-                        power_forward: stats_vec[5].parse().unwrap(),
-                        center: stats_vec[6].parse().unwrap(),
-                        height: stats_vec[7].parse().unwrap(),
-                        weight: stats_vec[8].parse().unwrap(),
-                        shoot_max: stats_vec[9].parse().unwrap(),
-                        shoot_min: stats_vec[9].parse().unwrap(),
-                        pass_max: stats_vec[10].parse().unwrap(),
-                        pass_min: stats_vec[10].parse().unwrap(),
-                        dribble_max: stats_vec[11].parse().unwrap(),
-                        dribble_min: stats_vec[11].parse().unwrap(),
-                        power_max: stats_vec[12].parse().unwrap(),
-                        power_min: stats_vec[12].parse().unwrap(),
-                        speed_max: stats_vec[13].parse().unwrap(),
-                        speed_min: stats_vec[13].parse().unwrap(),
-                        quickness_max: stats_vec[14].parse().unwrap(),
-                        quickness_min: stats_vec[14].parse().unwrap(),
-                        jump_max: stats_vec[15].parse().unwrap(),
-                        jump_min: stats_vec[15].parse().unwrap(),
-                        stamina_max: stats_vec[16].parse().unwrap(),
-                        stamina_min: stats_vec[16].parse().unwrap(),
-                        unknown_1: stats_vec[17].parse().unwrap(),
-                        unknown_2: stats_vec[18].parse().unwrap(),
-                        price: stats_vec[19].parse().unwrap(),
-                        unknown_3: stats_vec[20].parse().unwrap(),
-                        unknown_4: stats_vec[21].parse().unwrap(),
-                        unknown_5: stats_vec[22].parse().unwrap(),
-                        unknown_6: unknown_6_vec.clone(),
-                        unknown_7: stats_vec[24].parse().unwrap()
-                    }
-                }
-                _ => {
-                    Default::default()
-                }
+            Self {
+                name: stats_vec[0].clone(),
+                team: stats_vec[1].parse().unwrap(),
+                // TODO: implement handling for this
+                grades: stats_vec[2].parse().unwrap(),
+                height: stats_vec[3].parse().unwrap(),
+                weight: stats_vec[4].parse().unwrap(),
+                shoot: stats_vec[5].parse().unwrap(),
+                pass: stats_vec[6].parse().unwrap(),
+                dribble: stats_vec[7].parse().unwrap(),
+                power: stats_vec[8].parse().unwrap(),
+                speed: stats_vec[9].parse().unwrap(),
+                quickness: stats_vec[10].parse().unwrap(),
+                jump: stats_vec[11].parse().unwrap(),
+                stamina: stats_vec[12].parse().unwrap(),
+                unknown_1: stats_vec[13].parse().unwrap(),
+                unknown_2: stats_vec[14].parse().unwrap(),
+                price: stats_vec[15].parse().unwrap(),
+                unknown_3: stats_vec[16].parse().unwrap(),
+                unknown_4: stats_vec[17].parse().unwrap(),
+                unknown_5: stats_vec[18].parse().unwrap(),
+                unknown_6: unknown_6_vec.clone(),
+                unknown_6_len: stats_vec[20].parse().unwrap()
             }
+        }
+    }
+
+    #[derive(Debug, Default)]
+    pub struct SkillRange {
+        pub initial_value: u8,
+        pub max_value: u8
+    }
+
+    impl FromStr for SkillRange {
+        type Err = ParseError;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let range: Vec<u8> = s
+                .split('-')
+                .map(|s| s.parse::<u8>().unwrap())
+                .collect();
+
+            Ok(Self {
+                initial_value: range[range.len()-1],
+                max_value: range[0]
+            })
+        }
+    }
+
+    #[derive(Debug, Default)]
+    pub struct PositionGrades {
+        pub point_guard: u8,
+        pub shooting_guard: u8,
+        pub small_forward: u8,
+        pub power_forward: u8,
+        pub center: u8
+    }
+
+    impl FromStr for PositionGrades {
+        type Err = ParseError;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let grades: Vec<u8> = s
+                .split('-')
+                .map(|s| s.parse::<u8>().unwrap())
+                .collect();
+
+            if grades.len() != 5 {
+                panic!("incorrect position grade length");
+            }
+            Ok(Self {
+                point_guard: grades[0],
+                shooting_guard: grades[1],
+                small_forward: grades[2],
+                power_forward: grades[3],
+                center: grades[4]
+            })
         }
     }
 }

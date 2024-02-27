@@ -3,9 +3,11 @@ pub mod dat {
     use std::{
         fs::File as ioFile,
         io::{Error, Read, Seek},
-        str::FromStr,
-        string::ParseError,
+        str::FromStr
     };
+
+    use num_derive::FromPrimitive;
+    use thiserror::Error;
 
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
     // in the subsequent DAT, but for now we will use InnerDAT
@@ -237,8 +239,15 @@ pub mod dat {
                     line.push(data[current_index]);
                 } else {
                     let entry = StatsEntry::from_data(&line);
-                    entries.push(entry);
-                    line.clear();
+                    match entry {
+                        Ok(entry) => {
+                            entries.push(entry);
+                            line.clear();
+                        },
+                        Err(e) => {
+                            println!("error parsing entry at index {current_index}: \n{e}\nskipping...");
+                        }
+                    }
                 }
                 current_index += 1;
             }
@@ -251,7 +260,7 @@ pub mod dat {
     #[derive(Debug, Default)]
     pub struct StatsEntry {
         pub name: String,
-        pub team: u8,
+        pub team: Team,
         pub grades: PositionGrades,
         pub height: u16,
         pub weight: u16,
@@ -274,7 +283,7 @@ pub mod dat {
     }
 
     impl StatsEntry {
-        fn from_data(data: &Vec<u8>) -> Self {
+        fn from_data(data: &Vec<u8>) -> Result<Self, ValidationError> {
             let mut current_index: usize = 0;
             let mut stats_string: String = String::new();
             let mut stats_vec: Vec<String> = Vec::new();
@@ -308,21 +317,21 @@ pub mod dat {
                 }
                 unknown_6_index += 1;
             }
-            Self {
+            Ok(Self {
                 name: stats_vec[0].clone(),
-                team: stats_vec[1].parse().unwrap(),
+                team: Team::from_id(stats_vec[1].parse().unwrap())?,
                 // TODO: implement handling for this
-                grades: stats_vec[2].parse().unwrap(),
+                grades: stats_vec[2].parse()?,
                 height: stats_vec[3].parse().unwrap(),
                 weight: stats_vec[4].parse().unwrap(),
-                shoot: stats_vec[5].parse().unwrap(),
-                pass: stats_vec[6].parse().unwrap(),
-                dribble: stats_vec[7].parse().unwrap(),
-                power: stats_vec[8].parse().unwrap(),
-                speed: stats_vec[9].parse().unwrap(),
-                quickness: stats_vec[10].parse().unwrap(),
-                jump: stats_vec[11].parse().unwrap(),
-                stamina: stats_vec[12].parse().unwrap(),
+                shoot: stats_vec[5].parse()?,
+                pass: stats_vec[6].parse()?,
+                dribble: stats_vec[7].parse()?,
+                power: stats_vec[8].parse()?,
+                speed: stats_vec[9].parse()?,
+                quickness: stats_vec[10].parse()?,
+                jump: stats_vec[11].parse()?,
+                stamina: stats_vec[12].parse()?,
                 unknown_1: stats_vec[13].parse().unwrap(),
                 unknown_2: stats_vec[14].parse().unwrap(),
                 price: stats_vec[15].parse().unwrap(),
@@ -331,7 +340,7 @@ pub mod dat {
                 unknown_5: stats_vec[18].parse().unwrap(),
                 unknown_6: unknown_6_vec.clone(),
                 unknown_6_len: stats_vec[20].parse().unwrap()
-            }
+            })
         }
     }
 
@@ -342,13 +351,16 @@ pub mod dat {
     }
 
     impl FromStr for SkillRange {
-        type Err = ParseError;
+        type Err = ValidationError;
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let range: Vec<u8> = s
                 .split('-')
                 .map(|s| s.parse::<u8>().unwrap())
                 .collect();
 
+            if range.len() > 2 || range.len() < 1 {
+                return Err(ValidationError::IncorrectFormat("skill range".to_string()))
+            }
             Ok(Self {
                 initial_value: range[range.len()-1],
                 max_value: range[0]
@@ -366,7 +378,7 @@ pub mod dat {
     }
 
     impl FromStr for PositionGrades {
-        type Err = ParseError;
+        type Err = ValidationError;
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let grades: Vec<u8> = s
                 .split('-')
@@ -374,7 +386,7 @@ pub mod dat {
                 .collect();
 
             if grades.len() != 5 {
-                panic!("incorrect position grade length");
+                return Err(ValidationError::IncorrectFormat("position grades".to_string()));
             }
             Ok(Self {
                 point_guard: grades[0],
@@ -384,5 +396,47 @@ pub mod dat {
                 center: grades[4]
             })
         }
+    }
+
+    #[derive(Debug, Default, FromPrimitive)]
+    pub enum Team {
+        Gerbils = 0,
+        Dwolf = 1,
+        Roosters = 2,
+        Puppies = 3,
+        Durock = 4,
+        Lambs = 5,
+        Trotters = 6,
+        Linx = 7,
+        Apes = 8,
+        Boas = 9,
+        // ??????
+        CattlesMutilates = 10,
+        BSKTiamats = 11,
+        #[default]
+        FreeAgent = 12,
+        Shadow = 13
+    }
+
+    impl Team {
+        pub fn from_id(id: u8) -> Result<Self, ValidationError> {
+            let team = num::FromPrimitive::from_u8(id);
+            match team {
+                Some(validteam) => Ok(validteam),
+                None => Err(ValidationError::OutOfRange("team".to_string(), id))
+            }
+        }
+    }
+
+    #[derive(Error, Debug)]
+    pub enum ValidationError {
+        #[error("field `{0}` is in an invalid format")]
+        IncorrectFormat(String),
+        #[error("field `{0}` is missing")]
+        MissingField(String),
+        #[error("field `{0}`'s value of `{1}` is out of range")]
+        OutOfRange(String, u8),
+        #[error("unknown parsing error")]
+        ParseFailure
     }
 }

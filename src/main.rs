@@ -1,5 +1,7 @@
 use std::{fs::File, io::stdin, path::Path};
 
+extern crate num_derive;
+
 use baskelian_toolbox::dat::{DAT, FileType};
 fn main() {
     let mut s = String::new();

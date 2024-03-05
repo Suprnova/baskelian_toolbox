@@ -1,5 +1,6 @@
-pub mod stats;
 pub mod errors;
+pub mod put2d;
+pub mod stats;
 
 pub mod dat {
     use core::fmt;
@@ -8,7 +9,7 @@ pub mod dat {
         io::{Error, Read, Seek}
     };
 
-    pub use crate::{stats, errors};
+    pub use crate::{errors, put2d, stats};
 
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
     // in the subsequent DAT, but for now we will use InnerDAT
@@ -137,13 +138,22 @@ pub mod dat {
     pub struct File {
         pub data: Vec<u8>,
         pub file_type: FileType,
+        pub file_name: Option<String>
     }
 
     impl File {
         fn new(data: Vec<u8>) -> Self {
+            let file_type = FileType::from_data(&data);
+            let file_name = match &file_type {
+                FileType::PUT2D{put2d_script} => {
+                    Some(put2d_script.txd_path.clone().split('/').last().unwrap().strip_suffix(".txd").unwrap().to_string())
+                }
+                _ => { None }
+            };
             Self {
-                file_type: FileType::from_data(&data),
+                file_type,
                 data,
+                file_name
             }
         }
     }
@@ -155,8 +165,14 @@ pub mod dat {
         DMA,
         /// RenderWare Model File (Clump) (0x10)
         DFF,
+        /// Baskelian Font Type Information
+        FTI,
         /// Baskelian Map Info File
         MAPINFO,
+        /// Portable Network Graphics File
+        PNG,
+        /// Baskelian Put2D Script
+        PUT2D{put2d_script: put2d::Put2D},
         /// Baskelian Stats File
         STATS{stats_file: stats::Stats},
         /// RenderWare Texture Dictionary (0x16)
@@ -175,6 +191,17 @@ pub mod dat {
                     0x1B => Self::ANM,
                     0x1E => Self::DMA,
                     _ => {
+                        // check for PNG signature
+                        if data.len() >= 4 && data[1..4] == [0x50, 0x4E, 0x47] {
+                            return Self::PNG;
+                        }
+                        if data.len() >= 12 && data[0..12] == [0x70, 0x75, 0x74, 0x32, 0x64, 0x2D, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74] {
+                            return Self::PUT2D { put2d_script: put2d::Put2D::from_data(data).unwrap()}
+                        }
+                        // check for "font-type" signature
+                        if data.len() >= 20 && data[0..9] == [0x66, 0x6F, 0x6E, 0x74, 0x2D, 0x74, 0x79, 0x70, 0x65] {
+                            return Self::FTI;
+                        }
                         let mut current_index: usize = 0;
                         let mut space_count: u8 = 0;
                         while current_index < 150
@@ -217,7 +244,10 @@ pub mod dat {
                 Self::ANM => write!(f, ".anm"),
                 Self::DMA => write!(f, ".dma"),
                 Self::DFF => write!(f, ".dff"),
+                Self::FTI => write!(f, ".fti"),
                 Self::MAPINFO => write!(f, ".mapinfo"),
+                Self::PNG => write!(f, ".png"),
+                Self::PUT2D{..} => write!(f, ".put2d"),
                 Self::STATS{..} => write!(f, ".stats"),
                 Self::TXD => write!(f, ".txd"),
                 Self::UNKNOWN => write!(f, ""),

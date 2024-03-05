@@ -9,7 +9,7 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub(crate) fn from_data(data: &Vec<u8>) -> Self {
+    pub fn from_data(data: &Vec<u8>) -> Self {
         let mut current_index: usize = 0;
         let mut line: Vec<u8> = Vec::new();
         let mut entries: Vec<StatsEntry> = Vec::new();
@@ -63,7 +63,7 @@ pub struct StatsEntry {
 }
 
 impl StatsEntry {
-    pub(crate) fn from_data(data: &Vec<u8>) -> Result<Self, ValidationError> {
+    pub fn from_data(data: &Vec<u8>) -> Result<Self, ValidationError> {
         let mut current_index: usize = 0;
         let mut stats_string: String = String::new();
         let mut stats_vec: Vec<String> = Vec::new();

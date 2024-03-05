@@ -13,7 +13,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
-            "externalConsole": true
+            "console": "integratedTerminal",
+            "preLaunchTask": "rust: cargo build"
         },
     ]
 }

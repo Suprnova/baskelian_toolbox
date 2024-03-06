@@ -5,6 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "launch",
+            "name": "(WSL) Launch",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=baskelian_toolbox",
+                    "--package=baskelian_toolbox"
+                ],
+                "filter": {
+                    "name": "baskelian_toolbox",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+        },    
+        {
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",

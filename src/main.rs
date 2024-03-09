@@ -34,7 +34,7 @@ fn main() {
                 file_path = Path::new(&file_path).parent().unwrap().join(format!("{}{}", archive_name.clone().unwrap(), file.file_type));
             }
             std::fs::write(file_path.clone(), file.data).unwrap();
-            println!("Finished file {}", file_path.to_str().unwrap().split("\\").last().unwrap());
+            println!("Finished file {}", file_path.to_str().unwrap().split('\\').last().unwrap());
         }
     }
 }

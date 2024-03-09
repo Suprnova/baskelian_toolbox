@@ -3,13 +3,13 @@ use num_derive::FromPrimitive;
 
 use crate::errors::ValidationError;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Stats {
     pub entries: Vec<StatsEntry>,
 }
 
 impl Stats {
-    pub fn from_data(data: &Vec<u8>) -> Self {
+    pub fn from_data(data: &[u8]) -> Self {
         let mut current_index: usize = 0;
         let mut line: Vec<u8> = Vec::new();
         let mut entries: Vec<StatsEntry> = Vec::new();
@@ -37,7 +37,7 @@ impl Stats {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct StatsEntry {
     pub name: String,
     pub team: Team,
@@ -63,7 +63,7 @@ pub struct StatsEntry {
 }
 
 impl StatsEntry {
-    pub fn from_data(data: &Vec<u8>) -> Result<Self, ValidationError> {
+    pub fn from_data(data: &[u8]) -> Result<Self, ValidationError> {
         let mut current_index: usize = 0;
         let mut stats_string: String = String::new();
         let mut stats_vec: Vec<String> = Vec::new();
@@ -124,7 +124,7 @@ impl StatsEntry {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct SkillRange {
     pub initial_value: u8,
     pub max_value: u8,
@@ -145,7 +145,7 @@ impl FromStr for SkillRange {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PositionGrades {
     pub point_guard: u8,
     pub shooting_guard: u8,
@@ -175,7 +175,7 @@ impl FromStr for PositionGrades {
     }
 }
 
-#[derive(Debug, Default, FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum Team {
     Gerbils = 0,
     Dwolf = 1,
@@ -190,7 +190,6 @@ pub enum Team {
     // ??????
     CattlesMutilates = 10,
     BSKTiamats = 11,
-    #[default]
     FreeAgent = 12,
     Shadow = 13,
 }

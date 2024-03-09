@@ -5,7 +5,7 @@ use encoding_rs::SHIFT_JIS;
 
 use crate::errors::ValidationError;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Put2D {
     pub id: u16,
     pub unknown: u8,
@@ -16,7 +16,7 @@ pub struct Put2D {
 }
 
 impl Put2D {
-    pub fn from_data(data: &Vec<u8>) -> Result<Self, ValidationError> {
+    pub fn from_data(data: &[u8]) -> Result<Self, ValidationError> {
         let (res, _, errors) = SHIFT_JIS.decode(data);
         if errors {
             return Err(ValidationError::IncorrectFormat("Invalid SHIFT_JIS encoding!".to_string()))
@@ -44,7 +44,7 @@ impl Put2D {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Put2DEntry {
     unknown: u8,
     entry_type: Put2DEntryType
@@ -62,14 +62,13 @@ impl FromStr for Put2DEntry {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum Put2DEntryType {
     TYPE0{entry: Type0},
     TYPE1{entry: Type1},
     TYPE2{entry: Type2},
     TYPE3{entry: Type3},
     TYPE4{entry: Type4},
-    #[default]
     UNKNOWN
 }
 
@@ -154,7 +153,7 @@ impl FromStr for Put2DEntryType {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Type0 {
     unknown_1: u8,
     unknown_2: u8,

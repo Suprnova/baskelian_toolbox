@@ -11,6 +11,10 @@ pub mod dat {
 
     pub use crate::{errors, put2d, stats};
 
+    // TODO: Add Option<File> to FileTableEntry, create Populate function for DAT which will
+    // read and create every file in memory.
+    // TODO: Rework DAT creation to remove need for Default trait on every object
+     
     // this could be rewritten to have a DAT as the main file, and files within that DAT are also DATs, only actually extracting the files
     // in the subsequent DAT, but for now we will use InnerDAT
     // in general everything here is bad and should be rewritten this is just a bodge to match the file specifications
@@ -51,7 +55,7 @@ pub mod dat {
             Ok(dat_struct)
         }
 
-        pub fn read_entry(&self, entry: &TableEntry) -> Result<InnerDAT, Error> {
+        fn read_entry(&self, entry: &TableEntry) -> Result<InnerDAT, Error> {
             let mut inner_struct: InnerDAT = Default::default();
             inner_struct.offset = entry.address;
             let mut file = self.file.as_ref().unwrap();
@@ -97,7 +101,7 @@ pub mod dat {
         /// The memory address within the main DAT in which the file appears
         pub address: u32,
         /// The size of the file
-        pub size: u32,
+        pub size: usize,
         /// The number of entries in the file
         pub entry_count: u32,
     }
@@ -108,7 +112,7 @@ pub mod dat {
                 address: u32::from_le_bytes(
                     entry[0..4].try_into().expect("invalid table entry address"),
                 ),
-                size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")),
+                size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")).try_into().unwrap(),
                 entry_count: u32::from_le_bytes(
                     entry[8..12].try_into().expect("invalid table entry count"),
                 ),
@@ -120,7 +124,7 @@ pub mod dat {
         /// The memory address within the parent DAT in which the file appears
         pub address: u32,
         /// The size of the file
-        pub size: u32,
+        pub size: usize,
     }
 
     impl FileTableEntry {
@@ -129,7 +133,7 @@ pub mod dat {
                 address: u32::from_le_bytes(
                     entry[0..4].try_into().expect("invalid table entry address"),
                 ),
-                size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")),
+                size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")).try_into().unwrap(),
             }
         }
     }

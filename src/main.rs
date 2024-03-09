@@ -1,10 +1,6 @@
 use std::{fs::{create_dir, File}, path::Path};
 
-extern crate num_derive;
-extern crate encoding_rs;
-
-
-use baskelian_toolbox::dat::{DAT, FileType};
+use baskelian_toolbox::dat::DAT;
 fn main() {
     let dat_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("_artifacts/DATA.DAT");
     let extract_err = create_dir(dat_path.parent().unwrap().join("extracted")).err();
@@ -16,24 +12,24 @@ fn main() {
     let dat_file = File::open(&dat_path).expect("DATA.DAT file not found in _artifacts folder!");
     let dat = DAT::from_file(dat_file).unwrap();
     for (i, inner_dat) in dat.inner_dats.as_slice().iter().enumerate() {
-        let mut archive_name: Option<String> = None;
-        for (j, entry) in inner_dat.file_table_entries.as_slice().iter().enumerate() {
-            let mut file = dat.read_file(inner_dat, entry).unwrap();
-            let mut file_path = Path::new(&dat_path).parent().unwrap().join(format!("extracted/{i}-{j}{}", file.file_type));
-            // file has file name, so all files in this archive have same file name
-            // (temporary for put2d scripts, should be implemented library-side)
-            if file.file_name.is_some() {
-                archive_name = file.file_name;
+        let mut all_same_name = false;
+        if inner_dat.files.iter().all(|f| f.file_name == inner_dat.archive_name && f.file_name.is_some()) {
+            all_same_name = true;
+        }
+        for (j, file) in inner_dat.files.iter().enumerate() {
+            let data = dat.read_file(inner_dat, file).unwrap();
+            let mut file_path = Path::new(&dat_path).parent().unwrap().join(format!(
+                "extracted/{}-{}{}",
+                inner_dat.archive_name.clone().unwrap_or(i.to_string()),
+                file.file_name.clone().unwrap_or(j.to_string()),
+                file.file_type));
+
+            if all_same_name {
+                file_path = Path::new(&dat_path).parent().unwrap().join(format!(
+                    "extracted/{}{}", inner_dat.archive_name.clone().unwrap(), file.file_type
+                ));
             }
-            if archive_name.is_some() {
-                // an unknown file in a known archive_name must be a .txt
-                // (temporary for put2d scripts)
-                if matches!(file.file_type, FileType::UNKNOWN) {
-                    file.file_type = FileType::TXT
-                }
-                file_path = Path::new(&file_path).parent().unwrap().join(format!("{}{}", archive_name.clone().unwrap(), file.file_type));
-            }
-            std::fs::write(file_path.clone(), file.data).unwrap();
+            std::fs::write(file_path.clone(), data).unwrap();
             println!("Finished file {}", file_path.to_str().unwrap().split('\\').last().unwrap());
         }
     }

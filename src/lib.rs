@@ -1,16 +1,19 @@
 pub mod errors;
 pub mod file;
-extern crate num_derive;
 extern crate encoding_rs;
+extern crate num_derive;
 
 pub mod dat {
     use std::{
         fs::File as ioFile,
-        io::{Error, Read, Seek}
+        io::{Error, Read, Seek},
     };
 
     use crate::file::{File, FileType};
-    pub use crate::{errors, file::{put2d, stats}};
+    pub use crate::{
+        errors,
+        file::{put2d, stats},
+    };
 
     pub struct DAT {
         /// The file that the DAT originates from
@@ -27,10 +30,7 @@ pub mod dat {
             let entry_count = u32::from_le_bytes(buf);
             let mut buf: [u8; 12] = [255; 12];
             let mut i = 0;
-            let mut dat = Self {
-                file,
-                inner_dats
-            };
+            let mut dat = Self { file, inner_dats };
             while i < entry_count {
                 // this throws an error if even one table is messed up, we could be more lenient with something like that
                 dat.file.read_exact(&mut buf)?;
@@ -63,11 +63,7 @@ pub mod dat {
             Ok(files)
         }
 
-        pub fn read_file(
-            &self,
-            inner_dat: &InnerDAT,
-            file: &File,
-        ) -> Result<Vec<u8>, Error> {
+        pub fn read_file(&self, inner_dat: &InnerDAT, file: &File) -> Result<Vec<u8>, Error> {
             let mut io_file = &self.file;
             io_file.seek(std::io::SeekFrom::Start(
                 (inner_dat.offset + file.offset).into(),
@@ -84,7 +80,7 @@ pub mod dat {
         entry_count: u32,
         pub archive_name: Option<String>,
         pub archive_type: ArchiveType,
-        pub files: Vec<File>
+        pub files: Vec<File>,
     }
 
     impl InnerDAT {
@@ -100,7 +96,7 @@ pub mod dat {
                 ),
                 archive_name: None,
                 archive_type: ArchiveType::UNKNOWN,
-                files
+                files,
             };
             inner_dat.files = dat_file.index_files(&inner_dat).unwrap();
             inner_dat.archive_type = ArchiveType::from_archive(&inner_dat);
@@ -114,8 +110,16 @@ pub mod dat {
             match self.archive_type {
                 ArchiveType::CHARACTER => {
                     let file = &self.files[6];
-                    if let FileType::NAME{name} = &file.file_type {
-                        Some(name.file_path.split('/').nth(4).unwrap().strip_suffix(".name.out").unwrap().to_string())
+                    if let FileType::NAME { name } = &file.file_type {
+                        Some(
+                            name.file_path
+                                .split('/')
+                                .nth(4)
+                                .unwrap()
+                                .strip_suffix(".name.out")
+                                .unwrap()
+                                .to_string(),
+                        )
                     } else {
                         None
                     }
@@ -123,12 +127,22 @@ pub mod dat {
                 ArchiveType::UI => {
                     let file = &self.files.first().unwrap();
                     if let FileType::PUT2D { put2d_script } = &file.file_type {
-                        Some(put2d_script.txd_path.clone().split('/').last().unwrap().strip_suffix(".txd").unwrap().to_string())
+                        Some(
+                            put2d_script
+                                .txd_path
+                                .clone()
+                                .split('/')
+                                .last()
+                                .unwrap()
+                                .strip_suffix(".txd")
+                                .unwrap()
+                                .to_string(),
+                        )
                     } else {
                         None
                     }
                 }
-                _ => None
+                _ => None,
             }
         }
     }
@@ -137,32 +151,37 @@ pub mod dat {
         CHARACTER,
         OBJECT,
         UI,
-        UNKNOWN
+        UNKNOWN,
     }
 
     impl ArchiveType {
         pub fn from_archive(inner: &InnerDAT) -> Self {
             match inner.files.first().unwrap().file_type {
                 FileType::DFF => {
-                    if inner.entry_count > 7 && matches!(inner.files[6].file_type, FileType::NAME{ .. }) {
+                    if inner.entry_count > 7
+                        && matches!(inner.files[6].file_type, FileType::NAME { .. })
+                    {
                         ArchiveType::CHARACTER
-                    } else if inner.entry_count >= 2 && matches!(inner.files[1].file_type, FileType::TXD) {
+                    } else if inner.entry_count >= 2
+                        && matches!(inner.files[1].file_type, FileType::TXD)
+                    {
                         ArchiveType::OBJECT
                     } else {
                         ArchiveType::UNKNOWN
                     }
-                },
-                FileType::PUT2D {..} => ArchiveType::UI,
+                }
+                FileType::PUT2D { .. } => ArchiveType::UI,
                 FileType::UNKNOWN => {
-                    if inner.entry_count > 7 && matches!(inner.files[6].file_type, FileType::NAME { .. }) {
+                    if inner.entry_count > 7
+                        && matches!(inner.files[6].file_type, FileType::NAME { .. })
+                    {
                         ArchiveType::CHARACTER
                     } else {
                         ArchiveType::UNKNOWN
                     }
                 }
-                _ => ArchiveType::UNKNOWN
+                _ => ArchiveType::UNKNOWN,
             }
         }
     }
-    
 }

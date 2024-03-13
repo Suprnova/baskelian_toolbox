@@ -1,7 +1,7 @@
 pub struct Name {
     pub file_path: String,
     pub name_count: u16,
-    pub names: Vec<String>
+    pub names: Vec<String>,
 }
 
 impl Name {
@@ -18,7 +18,7 @@ impl Name {
         Self {
             file_path,
             name_count,
-            names
+            names,
         }
     }
 }

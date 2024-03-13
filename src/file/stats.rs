@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use num_derive::FromPrimitive;
+use std::str::FromStr;
 
 use crate::errors::ValidationError;
 

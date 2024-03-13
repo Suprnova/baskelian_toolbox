@@ -1,6 +1,6 @@
+pub mod name;
 pub mod put2d;
 pub mod stats;
-pub mod name;
 
 use std::{fmt, io::Error};
 
@@ -14,25 +14,36 @@ pub struct File {
 }
 
 impl File {
-    pub fn new(dat_file: &DAT, inner_dat: &InnerDAT, entry: [u8; 8], current_files: &[File]) -> Self {
+    pub fn new(
+        dat_file: &DAT,
+        inner_dat: &InnerDAT,
+        entry: [u8; 8],
+        current_files: &[File],
+    ) -> Self {
         let mut file = Self {
             file_type: FileType::UNKNOWN,
             file_name: None,
-            offset: u32::from_le_bytes(
-                entry[0..4].try_into().expect("invalid table entry offset")),
-            size: u32::from_le_bytes(
-                entry[4..8].try_into().expect("invalid table entry size"))
+            offset: u32::from_le_bytes(entry[0..4].try_into().expect("invalid table entry offset")),
+            size: u32::from_le_bytes(entry[4..8].try_into().expect("invalid table entry size")),
         };
         let data = dat_file.read_file(inner_dat, &file).unwrap();
         file.file_type = FileType::from_data(&data);
         file.file_name = match &file.file_type {
-            FileType::PUT2D { put2d_script } => {
-                Some(put2d_script.txd_path.clone().split('/').last().unwrap().strip_suffix(".txd").unwrap().to_string())
-            }
+            FileType::PUT2D { put2d_script } => Some(
+                put2d_script
+                    .txd_path
+                    .clone()
+                    .split('/')
+                    .last()
+                    .unwrap()
+                    .strip_suffix(".txd")
+                    .unwrap()
+                    .to_string(),
+            ),
             FileType::ANM => {
                 if current_files.len() > 7 {
                     if let FileType::NAME { name } = &current_files.get(6).unwrap().file_type {
-                        Some(name.names.get(current_files.len()-7).unwrap().clone())
+                        Some(name.names.get(current_files.len() - 7).unwrap().clone())
                     } else {
                         None
                     }
@@ -42,8 +53,20 @@ impl File {
             }
             FileType::TXD | FileType::UNKNOWN => {
                 if !current_files.is_empty() {
-                    if let FileType::PUT2D { put2d_script } = &current_files.first().unwrap().file_type {
-                        Some(put2d_script.txd_path.clone().split('/').last().unwrap().strip_suffix(".txd").unwrap().to_string())
+                    if let FileType::PUT2D { put2d_script } =
+                        &current_files.first().unwrap().file_type
+                    {
+                        Some(
+                            put2d_script
+                                .txd_path
+                                .clone()
+                                .split('/')
+                                .last()
+                                .unwrap()
+                                .strip_suffix(".txd")
+                                .unwrap()
+                                .to_string(),
+                        )
                     } else {
                         None
                     }
@@ -51,7 +74,7 @@ impl File {
                     None
                 }
             }
-            _ => { None }
+            _ => None,
         };
         file
     }
@@ -178,8 +201,8 @@ impl FileType {
                             ]
                     {
                         return Self::NAME {
-                            name: name::Name::new(data)
-                        }
+                            name: name::Name::new(data),
+                        };
                     }
                     // check for "font-type" signature
                     if data.len() >= 20

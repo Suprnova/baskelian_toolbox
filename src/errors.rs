@@ -9,5 +9,5 @@ pub enum ValidationError {
     #[error("field `{0}`'s value of `{1}` is out of range")]
     OutOfRange(String, u8),
     #[error("unknown parsing error")]
-    ParseFailure
+    ParseFailure,
 }
